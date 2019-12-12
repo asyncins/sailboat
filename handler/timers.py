@@ -48,8 +48,9 @@ class TimersHandler(MethodView):
                   "project": "fabias",
                   "rule": "{\"mode\": \"cron\", }",
                   "version": "1575734359",
-                  "id": "897hj5d4d35f8694c0a833d",
-                  "username": "nona"
+                  "idn": "897hj5d4d35f8694c0a833d",
+                  "username": "nona",
+                  "jid": "92836c98-30eb-429c-a29f-60d3a48de5b8"
                 },
                 {
                   "create": "2019-12-08 16:02:53",
@@ -58,13 +59,14 @@ class TimersHandler(MethodView):
                   "project": "fabias",
                   "rule": "198",
                   "version": "1575734359",
-                  "id": "897hj5d4d35f8694c0a833d",
-                  "username": "nona"
+                  "idn": "897hj5d4d35f8694c0a833d",
+                  "username": "nona",
+                  "jid": "92836c98-902j-nm16-a29f-60d3a48d8ij7"
                 }
               ]
             }
         """
-        query = request.form.get('query')
+        query = request.json.get('query')
         if query:
             query = json.loads(query)
         else:
@@ -83,6 +85,7 @@ class TimersHandler(MethodView):
             "version": i.get("version"),
             "mode": i.get("mode"),
             "rule": i.get("rule"),
+            "jid": i.get("jid"),
             "idn": i.get("idn"),
             "username": i.get("username"),
             "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
@@ -112,10 +115,10 @@ class TimersHandler(MethodView):
               "version": "1575734359"
             }
         """
-        project = request.form.get('project')
-        version = request.form.get('version')
-        mode = request.form.get('mode')
-        rule = request.form.get('rule')
+        project = request.json.get('project')
+        version = request.json.get('version')
+        mode = request.json.get('mode')
+        rule = request.json.get('rule')
         if not project or not rule or not version:
             return {"Message": "Fail", "Reason": "Missing Parameter"}, 400
         if not storages.exists(project, version):
@@ -180,7 +183,7 @@ class TimersHandler(MethodView):
             'Message': 'Success'
             }
         """
-        jid = request.form.get('jid')
+        jid = request.json.get('jid')
         if not jid:
             # 确保任务参数存在
             return {"Message": "Fail", "Reason": "Missing Parameter"}, 400

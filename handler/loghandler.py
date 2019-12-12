@@ -35,8 +35,8 @@ class LogHandler(MethodView):
               "size": "743 byte"
             }
         """
-        project = request.form.get("project")
-        job = request.form.get("job")
+        project = request.json.get("project")
+        job = request.json.get("job")
         if not project or not job:
             return {"Message": "Fail", "Reason": "Missing Parameter"}, 400
         filename = os.path.join(LOGPATH, project, "%s.log" % job)
@@ -84,7 +84,7 @@ class LogHandler(MethodView):
         """
         try:
             # 确保参数格式正确
-            querys = json.loads(request.form.get("querys"))
+            querys = json.loads(request.json.get("querys"))
             token = request.headers.get("Authorization")
             idn, username, role = get_user_info(token)
             if role != Role.SuperUser.value:

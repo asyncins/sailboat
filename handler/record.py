@@ -73,7 +73,7 @@ class RecordsHandler(MethodView):
         }
 
         """
-        query = request.form.get('query')
+        query = request.json.get('query')
         if query:
             query = json.loads(query)
         else:

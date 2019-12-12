@@ -39,10 +39,10 @@ class RegisterHandler(MethodView):
               "username": "sfhfpc"
             }
         """
-        username = request.form.get("username")
-        pwd = request.form.get("password")
-        nick = request.form.get("nick")
-        email = request.form.get("email")
+        username = request.json.get("username")
+        pwd = request.json.get("password")
+        nick = request.json.get("nick")
+        email = request.json.get("email")
         if not username or not pwd or not nick or not email or "@" not in email:
             return {"Message": "Fail", "Reason": "Missing Parameter"}, 400
         password = md5_encode(pwd)
@@ -91,7 +91,7 @@ class UserHandler(MethodView):
               }
             }
         """
-        query = request.form.get('query')
+        query = request.json.get('query')
         if query:
             query = json.loads(query)
         else:
@@ -140,9 +140,9 @@ class UserHandler(MethodView):
               "Message": "Success"
             }
         """
-        idn = request.form.get("id")
-        status = request.form.get("status")
-        role = request.form.get("role")
+        idn = request.json.get("id")
+        status = request.json.get("status")
+        role = request.json.get("role")
         if role and int(role) not in Role._value2member_map_:
             return {"Message": "Fail", "Reason": "Value Error"}, 400
         if status and int(status) not in Status._value2member_map_:
@@ -177,7 +177,7 @@ class UserHandler(MethodView):
               "Message": "Success"
             }
         """
-        idn = request.form.get("id")
+        idn = request.json.get("id")
         result = databases.user.delete_one({"_id": ObjectId(idn)})
         # 根据删除结果选择返回信息
         message, status = ("Success", 200) if result.deleted_count else ("Fail", 400)
@@ -205,8 +205,8 @@ class LoginHandler(MethodView):
               "Token": "token_first.token_second.token_three"
             }
         """
-        username = request.form.get("username")
-        pwd = request.form.get("password")
+        username = request.json.get("username")
+        pwd = request.json.get("password")
         password = md5_encode(pwd)
 
         result = databases.user.find_one({"username": username, "password": password})

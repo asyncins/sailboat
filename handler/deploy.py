@@ -48,7 +48,7 @@ class DeployHandler(MethodView):
               ]
             }
         """
-        query = request.form.get('query')
+        query = request.json.get('query')
         if query:
             query = json.loads(query)
         else:
@@ -94,8 +94,8 @@ class DeployHandler(MethodView):
               "version": 1576070618
             }
         """
-        project = request.form.get('project')
-        remark = request.form.get('remark')
+        project = request.json.get('project')
+        remark = request.json.get('remark')
         file = request.files.get('file')
         if not project or not file:
             # 确保参数和值存在
@@ -163,7 +163,7 @@ class DeployHandler(MethodView):
               }
             }
         """
-        query = request.form.get('query')
+        query = request.json.get('query')
 
         if query:
             query = json.loads(query)
