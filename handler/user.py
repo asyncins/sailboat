@@ -1,5 +1,3 @@
-import os
-import json
 from datetime import datetime, timedelta
 from flask.views import MethodView
 from flask import request
@@ -17,7 +15,7 @@ class RegisterHandler(MethodView):
 
     def post(self):
         """
-        * @api {post} /reg/ 用户注册
+        * @api {post} /reg 用户注册
         * @apiPermission Role.Anonymous
         * @apiParam {String} username  用户名
         * @apiParam {String} password  密码
@@ -25,10 +23,10 @@ class RegisterHandler(MethodView):
         * @apiParam {String} email  邮箱
         * @apiParamExample Param-Example
             {
-                "username": "sfhfpc",
+                "username": "vn",
                 "password": "123456",
-                "nick": "算法和反爬虫",
-                "email": "sfhfpc@foxmail.com"
+                "nick": "薇恩",
+                "email": "vn@foxmail.com"
             }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
@@ -40,18 +38,18 @@ class RegisterHandler(MethodView):
         * @apiSuccessExample {json} Success-Response:
             # status code: 201
             {
-              "code": 201,
-              "data": {
-                "create": "Fri, 13 Dec 2019 08:15:16 GMT",
-                "email": "asycins@aliyun.com",
-                "id": "5df2d814f007418369463308",
-                "nick": "小奎因",
-                "password": "e10adc3949ba59abbe56e057f20f883e",
-                "role": 10,
-                "status": 0,
-                "username": "asyncins"
-              },
-              "message": "success"
+                "code": 201,
+                "data": {
+                    "create": "Fri, 13 Dec 2019 20:40:41 GMT",
+                    "email": "vn@foxmail.com",
+                    "id": "5df386c9b2878b326cee14a9",
+                    "nick": "薇恩",
+                    "password": "e10adc3949ba59abbe56e057f20f883e",
+                    "role": 10,
+                    "status": 0,
+                    "username": "vn"
+                },
+                "message": "success"
             }
         """
         username = request.json.get("username")
@@ -149,9 +147,9 @@ class UserHandler(MethodView):
         if email:
             query["email"] = email
         if role:
-            query["role"] = role
+            query["role"] = int(role)
         if status:
-            query["status"] = status
+            query["status"] = int(status)
         # 从数据库中取出符合条件的数据
         result = databases.user.find(query).limit(int(limit)).skip(int(skip)).sort(order, int(sor))
         # 构造返回信息
@@ -233,7 +231,7 @@ class UserHandler(MethodView):
         * @apiParam {Int} id  账户 ID
         * @apiParamExample Param-Example
             {
-                "id": "5df2f9ea2e0bc74fa4eda8ee",
+                "id": "5df2f9ea2e0bc74fa4eda8ee"
             }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
