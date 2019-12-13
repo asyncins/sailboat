@@ -166,3 +166,9 @@ $ nginx -s reload
 ## 贡献者名单
 
 ## 联系我们
+
+# 版权声明
+
+Sailboat 由韦世东在编书籍衍生而来，基于 Sailboat 的源码解读类文章请联系韦世东 sfhfpc@foxmail.com 获得授权。
+
+Sailboat 的使用不受版权影响。
