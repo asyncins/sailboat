@@ -1,6 +1,6 @@
 # Sailboat
 
-![Sailboat slogen](https://github.com/asyncins/sailboat/blob/master/image/sailboat-slogen.png)
+![Sailboat slogen](http://can.sfhfpc.com/sfhfpc/20191213132327.png)
 
 Management Platform For Python Spider Project
 
