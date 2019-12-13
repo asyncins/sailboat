@@ -1,5 +1,7 @@
 # Sailboat
 
+![Sailboat slogen](https://github.com/asyncins/sailboat/blob/master/image/sailboat-slogen.png)
+
 Management Platform For Python Spider Project
 
 ⛵️Sailboat 意为帆船 
@@ -107,7 +109,7 @@ server {
 
 这里可做调整的配置只有 listen 和 location。
 
-listen 代表对外端口，例如设置为 5000 时，浏览器访问的网址为 http://www.xxx/com:5000/
+listen 代表对外端口，例如设置为 5000 时，浏览器访问的网址为 http://www.xxx.com:5000/
 
 location 代表设定路由，例如：
 
