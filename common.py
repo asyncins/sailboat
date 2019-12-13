@@ -14,6 +14,7 @@ from flask_cors import CORS
 store = {"default": MongoDBJobStore(client=client)}
 scheduler = BackgroundScheduler(jobstores=store)
 
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 

@@ -6,7 +6,7 @@ from pymongo import DESCENDING
 from flask.views import MethodView
 from connect import databases, client
 from components.auth import authorization
-from components.enums import Role
+from components.enums import Role, StatusCode
 
 
 class IndexHandler(MethodView):
@@ -16,7 +16,7 @@ class IndexHandler(MethodView):
     @authorization
     def get(self):
         """
-        * @api {get} / 工作台信息
+        * @api {get} /work 工作台信息
         * @apiPermission Role.Other
         * @apiHeader (Header) {String} Authorization Authorization value.
         * @apiSuccess {Int} deploys 项目总数
@@ -35,52 +35,43 @@ class IndexHandler(MethodView):
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
+              "code": 200,
               "data": {
-                "deploys": 0,
-                "jobs": 0,
-                "records": 75,
-                "timers": 0,
-                "users": 1
-              },
-              "hardware": {
-                "cpu_count": 4,
-                "cpu_logical_count": 4,
-                "cpu_use_percent": 40.4,
-                "memory_total": 16,
-                "memory_use_percent": 67.3
-              },
-              "most": {
-                "difference": [
-                  "sfhfpc",
-                  "porters",
-                  "asyncins"
-                ],
-                "duration": {
-                  "create": "Sun, 08 Dec 2019 00:01:27 GMT",
-                  "duration": "0:0:1",
-                  "end": "2019-12-08 00:01:27",
-                  "inserted": "5debcc5d4d35f8694c0a833d",
-                  "job": "dc67d3b0-017e-447c-a390-9e4c0fba60b5",
-                  "mode": null,
-                  "project": "fabias",
-                  "rule": "{\"mode\": \"cron\", }",
-                  "start": "2019-12-08 00:01:25",
-                  "version": "1575734359"
+                "hardware": {
+                  "cpu_count": 4,
+                  "cpu_logical_count": 4,
+                  "cpu_use_percent": 25.1,
+                  "memory_total": 16,
+                  "memory_use_percent": 68.6
                 },
-                "max_count": {
-                  "_id": "fabias",
-                  "count": 71
+                "most": [
+                  {
+                    "difference": [],
+                    "duration": {},
+                    "max_count": {}
+                  },
+                  400
+                ],
+                "total": {
+                  "deploys": 1,
+                  "jobs": 0,
+                  "records": 0,
+                  "timers": 0,
+                  "users": 3
                 }
-              }
+              },
+              "message": "success"
             }
         """
-        data = self.quantity_data()
+        total = self.quantity_total()
         hardware = self.hardware_resource()
         most = self.quantity_most()
-        return {"data": data, "most": most, "hardware": hardware}
+        return {"message": "success",
+                "data": {"total": total, "hardware": hardware, "most": most},
+                "code": 200}
 
     @staticmethod
-    def quantity_data():
+    def quantity_total():
         """数据库各项数量统计
         部署项目数
         调度计划数

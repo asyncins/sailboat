@@ -4,7 +4,7 @@ import jwt
 
 from settings import SECRET, ALG
 from connect import databases
-from components.enums import Status
+from components.enums import Status, StatusCode
 
 
 def is_overdue(express):
@@ -25,7 +25,10 @@ def authorization(func):
         permission = args[0].permission.get("permission")
         token = request.headers.get("Authorization")
         if not token:
-            return {"Message": "Fail", "Reason": "No Auth"}, 403
+            return {"message": StatusCode.NoAuth.value[0],
+                    "data": {},
+                    "code": StatusCode.NoAuth.value[1]
+                    }, 403
         info = jwt.decode(token, SECRET, algorithms=ALG)
         username = info.get("username")
         password = info.get("password")
@@ -33,16 +36,25 @@ def authorization(func):
         role = info.get("role")
         if role < permission.value:
             # 通过数学比较符号判断权限级别
-            return {"Message": "Fail", "Reason": "Insufficient Permission"}, 403
+            return {"message": StatusCode.NoAuth.value[0],
+                    "data": {},
+                    "code": StatusCode.NoAuth.value[1]
+                    }, 403
         # 判断令牌是否过期
         overdue = is_overdue(express)
         if not overdue:
-            return {"Message": "Fail", "Reason": "Token Overdue"}, 403
+            return {"message": StatusCode.TokenOverdue.value[0],
+                    "data": {},
+                    "code": StatusCode.TokenOverdue.value[1]
+                    }, 403
         # 查询数据库并进行判断
         exists = databases.user.count_documents(
             {"username": username, "password": password, "status": Status.On.value})
         if not exists:
-            return {"Message": "Fail", "Reason": "User Not Found or Status Off"}, 403
+            return {"message": StatusCode.UserStatusOff.value[0],
+                    "data": {},
+                    "code": StatusCode.UserStatusOff.value[1]
+                    }, 400
         return func(*args, **kw)
     return wrapper
 
@@ -62,5 +74,6 @@ def get_user_info(token):
     if not exists:
         return False
     idn = databases.user.find_one({"username": username, "password": password}).get("_id")
-    return (str(idn), username, role)
+    return str(idn), username, role
+
 

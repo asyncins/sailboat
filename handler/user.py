@@ -9,8 +9,8 @@ from bson import ObjectId
 from connect import databases
 from components.urils import md5_encode
 from settings import SECRET
-from components.auth import authorization
-from components.enums import Role, Status
+from components.auth import authorization, get_user_info
+from components.enums import Role, Status, StatusCode
 
 
 class RegisterHandler(MethodView):
@@ -26,17 +26,25 @@ class RegisterHandler(MethodView):
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
-              "Message": "Fail",
-              "Reason": "Missing Parameter"
+              "code": 4003,
+              "data": {},
+              "message": "parameter error"
             }
         * @apiSuccessExample {json} Success-Response:
             # status code: 201
             {
-              "Message": "Success",
-              "email": "5@foxmail.com",
-              "id": "5df0ea19b46116479b46c27c",
-              "role": 100,
-              "username": "sfhfpc"
+              "code": 201,
+              "data": {
+                "create": "Fri, 13 Dec 2019 08:15:16 GMT",
+                "email": "asycins@aliyun.com",
+                "id": "5df2d814f007418369463308",
+                "nick": "小奎因",
+                "password": "e10adc3949ba59abbe56e057f20f883e",
+                "role": 10,
+                "status": 0,
+                "username": "asyncins"
+              },
+              "message": "success"
             }
         """
         username = request.json.get("username")
@@ -44,7 +52,10 @@ class RegisterHandler(MethodView):
         nick = request.json.get("nick")
         email = request.json.get("email")
         if not username or not pwd or not nick or not email or "@" not in email:
-            return {"Message": "Fail", "Reason": "Missing Parameter"}, 400
+            return {"message": StatusCode.ParameterError.value[0],
+                    "data": {},
+                    "code": StatusCode.ParameterError.value[1]
+                    }, 400
         password = md5_encode(pwd)
         count = databases.user.count_documents({})
         if not count:
@@ -62,9 +73,12 @@ class RegisterHandler(MethodView):
         message["create"] = datetime.now()
         # 将信息写入数据库并将相应信息返回给用户
         inserted = databases.user.insert_one(message).inserted_id
-        return {"Message": "Success", "id": str(inserted),
-                "username": username, "email": email,
-                "role": role}, 201
+        message["id"] = str(inserted)
+        message["username"] = username
+        message["email"] = email
+        message["role"] = role
+        message.pop("_id")
+        return {"message": "success", "data": message, "code": 201}, 201
 
 
 class UserHandler(MethodView):
@@ -77,27 +91,50 @@ class UserHandler(MethodView):
         * @api {get} /user/ 获取用户列表
         * @apiPermission Role.Superuser
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Dict} [query]  {"username": "sfhfpc"}
+        * @apiParam {Json} query 可自定义查询参数 \
+        {
+            "query": {"username": "sfhfpc"},
+            "limit": 2,
+            "skip": 3
+        } \
+        OR \
+        {
+            "query": {},
+            "limit": 2,
+            "skip": 3
+        }
+        * @apiParam {Int} [limit] Limit
+        * @apiParam {Int} [skip] Skip
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
-              "result": {
-                "create": "2019-12-08 15:10:41",
-                "email": "sfhfpc@foxmail.com",
-                "id": "5deca1f1df418f1d2261f4d7",
-                "role": 100,
-                "status": 1,
-                "username": "sfhfpc"
-              }
+              "code": 200,
+              "data": [
+                {
+                  "create": "2019-12-11 21:07:37",
+                  "email": "5@foxmail.com",
+                  "id": "5df0ea19b46116479b46c27c",
+                  "role": 100,
+                  "status": 1,
+                  "username": "sfhfpc"
+                },
+                {
+                  "create": "2019-12-13 08:15:16",
+                  "email": "asycins@aliyun.com",
+                  "id": "5df2d814f007418369463308",
+                  "role": 10,
+                  "status": 0,
+                  "username": "asyncins"
+                }
+              ],
+              "message": "success"
             }
         """
         query = request.json.get('query')
-        if query:
-            query = json.loads(query)
-        else:
-            query = {}
+        limit = request.json.get('limit') or 0
+        skip = request.json.get('skip') or 0
         # 允许用户自定义查询条件
-        finds = databases.user.find(query)
+        finds = databases.user.find(query).limit(limit).skip(skip)
         info = [{
             "id": str(i.get('_id')),
             "username": i.get("username"),
@@ -105,9 +142,8 @@ class UserHandler(MethodView):
             "role": i.get("role"),
             "status": i.get("status"),
             "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
-            for i in finds][0]
-        message = {"result": info}
-        return message
+            for i in finds]
+        return {"message": "success", "data": info, "code": 200}, 200
 
     @authorization
     def put(self):
@@ -122,31 +158,33 @@ class UserHandler(MethodView):
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
-              "Message": "Fail",
-              "Reason": "User Not Found or Status Off"
-            }
-
-            OR
-
-            # status code: 400
-            {
-              "Count": 0,
-              "Message": "Fail"
+              "code": 4003,
+              "data": {},
+              "message": "parameter error"
             }
         * @apiSuccessExample {json} Success-Response:
-            # status code: 203
+            # status code: 200
             {
-              "Count": 1,
-              "Message": "Success"
+              "code": 200,
+              "data": {
+                "count": 1
+              },
+              "message": "success"
             }
         """
         idn = request.json.get("id")
         status = request.json.get("status")
         role = request.json.get("role")
         if role and int(role) not in Role._value2member_map_:
-            return {"Message": "Fail", "Reason": "Value Error"}, 400
+            return {"message": StatusCode.ParameterError.value[0],
+                    "data": {},
+                    "code": StatusCode.ParameterError.value[1]
+                    }, 400
         if status and int(status) not in Status._value2member_map_:
-            return {"Message": "Fail", "Reason": "Value Error"}, 400
+            return {"message": StatusCode.ParameterError.value[0],
+                    "data": {},
+                    "code": StatusCode.ParameterError.value[1]
+                    }, 400
         user = databases.user.find_one({"_id": ObjectId(idn)})
         if not status:
             status = user.get("status")
@@ -154,8 +192,8 @@ class UserHandler(MethodView):
             role = user.get("role")
         result = databases.user.update_one({"_id": ObjectId(idn)}, {'$set': {"status": int(status), "role": int(role)}})
         # 根据更新结果选择返回信息
-        message, status = ("Success", 203) if result.modified_count else ("Fail", 400)
-        return {"Message": message, "Count": result.modified_count}, status
+        message, status = ("success", 200) if result.modified_count else ("fail", 400)
+        return {"message": message, "data": {"count": result.modified_count}, "code": status}, status
 
     @authorization
     def delete(self):
@@ -167,21 +205,27 @@ class UserHandler(MethodView):
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
-              "Message": "Fail",
-              "Reason": "User Not Found or Status Off"
+              "code": 400,
+              "data": {
+                "count": 0
+              },
+              "message": "fail"
             }
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
-              "Count": 1,
-              "Message": "Success"
+              "code": 200,
+              "data": {
+                "count": 1
+              },
+              "message": "success"
             }
         """
         idn = request.json.get("id")
         result = databases.user.delete_one({"_id": ObjectId(idn)})
         # 根据删除结果选择返回信息
-        message, status = ("Success", 200) if result.deleted_count else ("Fail", 400)
-        return {"Message": message, "Count": result.deleted_count}, status
+        message, status = ("success", 200) if result.deleted_count else ("fail", 400)
+        return {"message": message, "data": {"count": result.deleted_count}, "code": status}, status
 
 
 class LoginHandler(MethodView):
@@ -195,32 +239,51 @@ class LoginHandler(MethodView):
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
-              "Message": "Fail",
-              "Reason": "User Not Found"
+              "code": 4005,
+              "data": {},
+              "message": "not found"
             }
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
-              "Message": "Success",
-              "Token": "token_first.token_second.token_three"
+              "code": 200,
+              "data": {
+                "idn": "5df0ea19b46116479b46c27c",
+                "role": 100,
+                "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InNmaGZwYyIsInBhc3N3b3JkIjoiZTEwYWRjMzk0OWJhNTlhYmJlNTZlMDU3ZjIwZjg4M2UiLCJzdGF0dXMiOjEsInJvbGUiOjEwMCwiZXhwcmVzcyI6IjIwMTktMTItMTMgMTY6MDU6MjcifQ.KiPJvuQwKeZHof8CoAoppxNTsjNgCjpkkJT2Pi48XOs",
+                "username": "sfhfpc"
+              },
+              "message": "success"
             }
         """
         username = request.json.get("username")
         pwd = request.json.get("password")
         password = md5_encode(pwd)
-
-        result = databases.user.find_one({"username": username, "password": password})
+        # 支持用户名或邮箱登录
+        query = {"username": username, "password": password}
+        name_exit = databases.user.count_documents(query)
+        if not name_exit:
+            query = {"email": username, "password": password}
+        result = databases.user.find_one(query)
         if not result:
-            return {"Message": "Fail", "Reason": "User Not Found"}, 400
+            return {"message": StatusCode.NotFound.value[0],
+                    "data": {},
+                    "code": StatusCode.NotFound.value[1]
+                    }, 400
         status = result.get("status")
         if not status:
-            return {"Message": "Fail", "Reason": "User Status Off"}, 400
-
-        # 构造生成 Token 所用到的元素，Token 默认一小时过期
-        exp = datetime.now() + timedelta(hours=1)
+            return {"message": StatusCode.UserStatusOff.value[0],
+                    "data": {},
+                    "code": StatusCode.UserStatusOff.value[1]
+                    }, 400
+        # 构造生成 Token 所用到的元素，Token 默认八小时过期
+        exp = datetime.now() + timedelta(hours=8)
         express = exp.strftime("%Y-%m-%d %H:%M:%S")
         payload = {"username": username, "password": password,
                    "status": status, "role": result.get("role"),
                    "express": express}
         token = str(jwt.encode(payload, SECRET, algorithm='HS256'), "utf8")
-        return {"Message": "Success", "Token": token}
+        idn, username, role = get_user_info(token)
+        return {"message": "success",
+                "data": {"idn": idn, "username": username, "role": role, "token": token},
+                "code": 200}

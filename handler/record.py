@@ -32,52 +32,76 @@ class RecordsHandler(MethodView):
         * @apiPermission Role.Developer AND Owner
         * @apiDescription 用户只能查看自己设定的调度计划生成的记录
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Dict} [query]  {"project": "fabias"} OR {}
+        * @apiParam {Json} query 可自定义查询参数 \
+        {
+            "query": {"project": "videos"},
+            "limit": 2,
+            "skip": 3
+        }
+        \
+         OR \
+         {
+            "query": {},
+            "limit": 2,
+            "skip": 3
+        }
+        * @apiParam {Int} [limit] Limit
+        * @apiParam {Int} [skip] Skip
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
-              "data": [
-                {
-                  "create": "2019-12-07 23:59:56",
-                  "duration": "0:0:0",
-                  "end": "2019-12-07 23:59:56",
-                  "id": "5debcc7c4d35f8694c0a833e",
-                  "inserted": "5debcc5d4d35f8694c0a833d",
-                  "jid": null,
-                  "job": "3da6718e-2e05-4324-bd24-1e8aec57355f",
-                  "mode": null,
-                  "project": "asyncins",
-                  "rule": "{\"mode\": \"cron\", }",
-                  "start": "2019-12-07 23:59:55",
-                  "version": "1575734359",
-                  "idn": "5df0ea19b46116479b46c27c",
-                  "username": "sfhfpc"
-                },
-                {
-                  "create": "2019-12-08 00:00:26",
-                  "duration": "0:0:0",
-                  "end": "2019-12-08 00:00:26",
-                  "id": "5debcc9a4d35f8694c0a833f",
-                  "inserted": "5debcc5d4d35f8694c0a833d",
-                  "jid": null,
-                  "job": "600a4eee-991d-4a7f-8b1b-827abe1507eb",
-                  "mode": null,
-                  "project": "fabias",
-                  "rule": "{\"mode\": \"cron\", }",
-                  "start": "2019-12-08 00:00:25",
-                  "version": "1575734359",
-                  "idn": "5df0ea19b46116479b46c27c",
-                  "username": "sfhfpc"
-                }
-            ]
-        }
+              "code": 200,
+              "data": {
+                "data": [
+                  {
+                    "create": "2019-12-13 09:20:00",
+                    "duration": "0:0:0",
+                    "end": "2019-12-13 09:20:00",
+                    "id": "5df2e74005db1557d78b16d7",
+                    "idn": "5df0ea19b46116479b46c27c",
+                    "inserted": "5df2e70a0286cdc6a686b9df",
+                    "jid": "5a36346b-1f28-41de-a94e-b28c550acc42",
+                    "job": "3e5aecfb-2f46-42ea-b492-bbcc1e1219ca",
+                    "mode": "cron",
+                    "project": "videos",
+                    "rule": {
+                      "hour": "*",
+                      "minute": "*",
+                      "second": "*/30"
+                    },
+                    "start": "2019-12-13 09:20:00",
+                    "username": "sfhfpc",
+                    "version": "1576199082"
+                  },
+                  {
+                    "create": "2019-12-13 09:24:00",
+                    "duration": "0:0:0",
+                    "end": "2019-12-13 09:24:00",
+                    "id": "5df2e83017040767e3bd7076",
+                    "idn": "5df0ea19b46116479b46c27c",
+                    "inserted": "5df2e70a0286cdc6a686b9df",
+                    "jid": "5a36346b-1f28-41de-a94e-b28c550acc42",
+                    "job": "8fe33a65-c568-47af-8e0f-911c064d02a3",
+                    "mode": "cron",
+                    "project": "videos",
+                    "rule": {
+                      "hour": "*",
+                      "minute": "*",
+                      "second": "*/30"
+                    },
+                    "start": "2019-12-13 09:24:00",
+                    "username": "sfhfpc",
+                    "version": "1576199082"
+                  }
+                ]
+              },
+              "message": "success"
+            }
 
         """
         query = request.json.get('query')
-        if query:
-            query = json.loads(query)
-        else:
-            query = {}
+        limit = request.json.get('limit') or 0
+        skip = request.json.get('skip') or 0
         # 检查所有权
         token = request.headers.get("Authorization")
         idn, username, role = get_user_info(token)
@@ -85,7 +109,7 @@ class RecordsHandler(MethodView):
             query["idn"] = idn
             query["username"] = username
         # 允许用户自定义查询条件
-        finds = databases.record.find(query)
+        finds = databases.record.find(query).limit(limit).skip(skip)
         message = {"data": [{
             "id": str(i.get('_id')),
             "project": i.get("project"),
@@ -102,4 +126,6 @@ class RecordsHandler(MethodView):
             "username": username,
             "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
             for i in finds]}
-        return message
+        return {"message": "success",
+                "data": message,
+                "code": 200}
