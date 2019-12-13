@@ -6,5 +6,5 @@ from pymongo import MongoClient
 from settings import MONGODB
 
 client = MongoClient(MONGODB)
-databases = client.slp
+databases = client.sailboat
 
