@@ -73,9 +73,9 @@ class DeployHandler(MethodView):
         token = request.headers.get("Authorization")
         auth_idn, auth_username, auth_role = get_user_info(token)
         if auth_role != Role.SuperUser.value:
-            username = request.args.get('username')
-        else:
             username = auth_username
+        else:
+            username = request.args.get("username")
         project = request.args.get('project')
         version = request.args.get('version')
 
