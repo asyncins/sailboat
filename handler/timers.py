@@ -185,6 +185,16 @@ class TimersHandler(MethodView):
                     }, 403
         # 生成唯一值作为任务标识
         jid = str(uuid4())
+        # 添加任务，这里用双星号传入时间参数
+        try:
+            scheduler.add_job(performer, mode, id=jid,
+                        args=[project, version, mode, rule, jid, idn, username],
+                        **rule)
+        except Exception as exc:
+            return {"message": StatusCode.ParameterError.value[0],
+                    "data": {},
+                    "code": StatusCode.ParameterError.value[1]
+                    }, 400
         # 将信息保存到数据库
         message = {"project": project, "version": version,
                    "mode": mode, "rule": rule,
@@ -192,16 +202,6 @@ class TimersHandler(MethodView):
                    "username": username,
                    "create": datetime.now()}
         inserted = databases.timers.insert_one(message).inserted_id
-        # 添加任务，这里用双星号传入时间参数
-        try:
-            scheduler.add_job(performer, mode, id=jid,
-                        args=[project, version, mode, rule, jid, str(inserted), idn, username],
-                        **rule)
-        except ValueError:
-            return {"message": StatusCode.ParameterError.value[0],
-                    "data": {},
-                    "code": StatusCode.ParameterError.value[1]
-                    }, 400
         return {"message": "success",
                 "data": {"project": project, "version": version, "jid": jid, "inserted": str(inserted)},
                 "code": 201}, 201
