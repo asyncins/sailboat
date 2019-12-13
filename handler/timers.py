@@ -261,7 +261,7 @@ class TimersHandler(MethodView):
         idn, username, role = get_user_info(token)
         query = {"jid": jid, "idn": idn, "username": username}
         count = databases.timers.count_documents(query)
-        if not count or role != Role.SuperUser.value:
+        if not count and role != Role.SuperUser.value:
             return {"message": StatusCode.IsNotYours.value[0],
                     "data": {},
                     "code": StatusCode.IsNotYours.value[1]

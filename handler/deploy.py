@@ -186,7 +186,6 @@ class DeployHandler(MethodView):
         @apiParamExample Param-Example:
             # 删除指定文件
             {"query": {"project": "sail", "version": "1576199082"}}
-
             # 删除指定目录及目录下所有文件
             {"query": {"project": "football"}}
         * @apiErrorExample {json} Error-Response:
@@ -249,7 +248,7 @@ class DeployHandler(MethodView):
             query["idn"] = idn
             query["username"] = username
             count = databases.deploy.count_documents(query)
-            if not count or role != Role.SuperUser.value:
+            if not count and role != Role.SuperUser.value:
                 return {"message": StatusCode.IsNotYours.value[0],
                         "data": {},
                         "code": StatusCode.IsNotYours.value[1]
