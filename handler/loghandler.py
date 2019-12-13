@@ -21,7 +21,10 @@ class LogHandler(MethodView):
         * @apiPermission Role.Developer AND Owner
         * @apiDescription 用户只能查看自己设定的调度计划生成的日志
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Json} / {"project": "videos", "job": "3e5aecfb-2f46-42ea-b492-bbcc1e1219ca"}
+        * @apiParam {String} project 项目名称
+        * @apiParam {String} job Job
+        * @apiParamExample Param-Example
+            /logs?project=videos&Job=3e5aecfb-2f46-42ea-b492-bbcc1e1219ca
         @apiErrorExample {json} Error-Response:
             # status code: 400
             {
@@ -40,8 +43,8 @@ class LogHandler(MethodView):
               "message": "success"
             }
         """
-        project = request.json.get("project")
-        job = request.json.get("job")
+        project = request.args.get("project")
+        job = request.args.get("job")
         if not project or not job:
             return {"message": StatusCode.MissingParameter.value[0],
                     "data": {},
@@ -86,10 +89,21 @@ class LogHandler(MethodView):
         * @apiPermission Role.Superuser
         * @apiDescription 管理员才能删除日志
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Json} querys \
-        {
-            "querys": [{"project": "videos", "job": "3e5aecfb-2f46-42ea-b492-bbcc1e1219ca"}]
-        }
+        * @apiParam {Json} query 批量删除（指定的）日志文件
+        @apiParamExample Param-Example:
+            # 删除指定文件
+            {
+                "querys": [
+                    {
+                        "project": "videos",
+                        "job": "3e5aecfb-2f46-42ea-b492-bbcc1e1219ca"
+                    },
+                    {
+                        "project": "football",
+                        "job": "5i8a9cfb-2f46-42ea-b492-b07c1e1201h6"
+                    }
+                ]
+            }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {

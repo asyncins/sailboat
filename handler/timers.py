@@ -34,20 +34,17 @@ class TimersHandler(MethodView):
         * @apiPermission Role.Developer AND Owner
         * @apiDescription 用户只能查看自己设定的调度计划
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Json} query 可自定义查询参数
-          {
-            "query": {"project": "videos"},
-            "limit": 2,
-            "skip": 3
-          } \
-        OR \
-        {
-            "query": {},
-            "limit": 2,
-            "skip": 3
-        }
-        * @apiParam {Int} [limit] Limit
-        * @apiParam {Int} [skip] Skip
+        * @apiParam {String} [username] 用户名
+        * @apiParam {String} [idn] 用户 ID
+        * @apiParam {String} [project] 项目名称
+        * @apiParam {Int} [version] 版本号
+        * @apiParam {String="cron", "interval", "date"} [mode] 时间类型
+        * @apiParam {Int} [limit=0] Limit
+        * @apiParam {Int} [skip=0] Skip
+        * @apiParam {String="create", "status", "role"} [order=create] 排序字段
+        * @apiParam {Int=1, -1} [sort=1] 排序方式
+        * @apiParamExample Param-Example
+            /timer?project=football&order=version&sort=-1
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
@@ -72,29 +69,52 @@ class TimersHandler(MethodView):
               "message": "success"
             }
         """
-        query = request.json.get('query')
-        limit = request.json.get('limit') or 0
-        skip = request.json.get('skip') or 0
+        query = {}
         # 检查所有权
         token = request.headers.get("Authorization")
-        idn, username, role = get_user_info(token)
-        if role != Role.SuperUser.value:
-            query["idn"] = idn
+        auth_idn, auth_username, auth_role = get_user_info(token)
+        if auth_role != Role.SuperUser.value:
+            username = request.args.get('username')
+            idn = request.args.get('idn')
+        else:
+            username = auth_username
+            idn = auth_idn
+        project = request.args.get('project')
+        version = request.args.get('version')
+        mode = request.args.get('mode')
+
+        order = request.args.get('order') or "create"
+        sor = request.args.get('sort') or 1
+        limit = request.args.get('limit') or 0
+        skip = request.args.get('skip') or 0
+        if project:
+            query["project"] = project
+        if version:
+            query["version"] = version
+        if mode:
+            query["mode"] = mode
+        if username:
             query["username"] = username
-        # 允许用户自定义查询条件
-        finds = databases.timers.find(query).limit(limit).skip(skip)
-        message = [{
-            "id": str(i.get('_id')),
-            "project": i.get("project"),
-            "version": i.get("version"),
-            "mode": i.get("mode"),
-            "rule": i.get("rule"),
-            "jid": i.get("jid"),
-            "idn": i.get("idn"),
-            "username": i.get("username"),
-            "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
-            for i in finds]
-        return {"message": "success", "data": message, "code": 200}
+        if idn:
+            query["idn"] = idn
+        # 从数据库中取出符合条件的数据
+        result = databases.timers.find(query).limit(int(limit)).skip(int(skip)).sort(order, int(sor))
+        # 构造返回信息
+        information = []
+        for i in result:
+            info = {
+                "id": str(i.get('_id')),
+                "project": i.get("project"),
+                "version": i.get("version"),
+                "mode": i.get("mode"),
+                "rule": i.get("rule"),
+                "jid": i.get("jid"),
+                "idn": i.get("idn"),
+                "username": i.get("username"),
+                "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")
+            }
+            information.append(info)
+        return {"message": "success", "data": information, "code": 200}
 
     @authorization
     def post(self):
@@ -104,13 +124,22 @@ class TimersHandler(MethodView):
         * @apiDescription 用户只能为属于自己的项目设定调度计划
         * @apiParam {String} project 项目名称 - coders
         * @apiParam {String} version 项目版本号 - 1575734359
-        * @apiParam {String} mode 周期类型参考 APScheduler \
-        date/interval/cron
-        * @apiParam {Dict} rule 周期规则参考 APScheduler \
-         {"hour": "*", "minute": "*", "second": "*/20"}
+        * @apiParam {String="cron", "interval", "date"} mode 周期类型参考 APScheduler
+        * @apiParam {Dict} rule 周期规则参考 APScheduler
+        * @apiParamExample Param-Example
+            {
+                "project": "lol",
+                "version": "1576206368",
+                "mode": "cron",
+                "rule": {"hour": "*", "minute": "*/15"}
+            }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
-            {"Message": "Fail", "Reason": "Missing Parameter"}
+            {
+              "code": 4002,
+              "data": {},
+              "message": "not found"
+            }
         * @apiSuccessExample {json} Success-Response:
             # status code: 201
             {
@@ -188,7 +217,10 @@ class TimersHandler(MethodView):
         * @apiPermission Role.Developer AND Owner
         * @apiDescription 用户只能删除自己设定的调度计划
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Json} jid {"jid": "5a36346b-1f28-41de-a94e-b28c550acc342"}
+
+        * @apiParam {Json} jid 任务 ID
+        * @apiParamExample Param-Example
+            {"jid": "5a36346b-1f28-41de-a94e-b28c550acc342"}
         * @apiErrorExample {json} Error-Response:
             # status code: 403
             {

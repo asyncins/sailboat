@@ -32,22 +32,15 @@ class DeployHandler(MethodView):
         * @apiPermission Role.Developer AND Owner
         * @apiDescription 用户只能查看自己上传的项目
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Json} query 可自定义查询参数 \
-        {
-        "query":
-            {"project": "sail"},
-            "limit": 2,
-            "skip": 3
-        } \
-        OR \
-        {
-        "query":
-            {},
-            "limit": 2,
-            "skip": 3
-        }
-        * @apiParam {Int} [limit] Limit
-        * @apiParam {Int} [skip] Skip
+        * @apiParam {String} [username] 用户名
+        * @apiParam {String} [project] 项目名称
+        * @apiParam {Int} [version] 版本号
+        * @apiParam {Int} [limit=0] Limit
+        * @apiParam {Int} [skip=0] Skip
+        * @apiParam {String="create", "status", "role"} [order=create] 排序字段
+        * @apiParam {Int=1, -1} [sort=1] 排序方式
+        * @apiParamExample Param-Example
+            /deploy?project=football&order=version&sort=-1
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
@@ -75,26 +68,40 @@ class DeployHandler(MethodView):
               "message": "success"
             }
         """
-        query = request.json.get('query')
-        limit = request.json.get('limit') or 0
-        skip = request.json.get('skip') or 0
+        query = {}
         # 检查所有权
         token = request.headers.get("Authorization")
-        idn, username, role = get_user_info(token)
-        if role != Role.SuperUser.value:
-            query["idn"] = idn
+        auth_idn, auth_username, auth_role = get_user_info(token)
+        if auth_role != Role.SuperUser.value:
+            username = request.args.get('username')
+        else:
+            username = auth_username
+        project = request.args.get('project')
+        version = request.args.get('version')
+
+        order = request.args.get('order') or "create"
+        sor = request.args.get('sort') or 1
+        limit = request.args.get('limit') or 0
+        skip = request.args.get('skip') or 0
+        if project:
+            query["project"] = project
+        if version:
+            query["version"] = version
+        if username:
             query["username"] = username
         # 允许用户自定义查询条件
-        finds = databases.deploy.find(query).limit(limit).skip(skip)
-        message = {"data": [{
-            "id": str(i.get('_id')),
-            "project": i.get("project"),
-            "version": i.get("version"),
-            "idn": i.get("idn"),
-            "username": i.get("username"),
-            "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
-            for i in finds]}
-        return {"message": "success", "data": message, "code": 200}
+        result = databases.deploy.find(query).limit(int(limit)).skip(int(skip)).sort(order, int(sor))
+        information = []
+        for i in result:
+            info = {
+                "id": str(i.get('_id')),
+                "project": i.get("project"),
+                "version": i.get("version"),
+                "idn": i.get("idn"),
+                "username": i.get("username"),
+                "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
+            information.append(info)
+        return {"message": "success", "data": information, "code": 200}
 
     @authorization
     def post(self):
@@ -175,9 +182,13 @@ class DeployHandler(MethodView):
         * @api {delete} /deploy/ 删除项目
         * @apiPermission Role.Developer AND Owner
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Json} query 删除指定文件 {"query": {"project": "sail", "version": "1576199082"}} \
-        OR \
-        删除指定目录及目录下所有文件  {"query": {"project": "football"}}
+        * @apiParam {Json} query 删除指定文件或指定目录
+        @apiParamExample Param-Example:
+            # 删除指定文件
+            {"query": {"project": "sail", "version": "1576199082"}}
+
+            # 删除指定目录及目录下所有文件
+            {"query": {"project": "football"}}
         * @apiErrorExample {json} Error-Response:
             # status code: 403
             {

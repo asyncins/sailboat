@@ -23,6 +23,13 @@ class RegisterHandler(MethodView):
         * @apiParam {String} password  密码
         * @apiParam {String} nick  昵称
         * @apiParam {String} email  邮箱
+        * @apiParamExample Param-Example
+            {
+                "username": "sfhfpc",
+                "password": "123456",
+                "nick": "算法和反爬虫",
+                "email": "sfhfpc@foxmail.com"
+            }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
@@ -88,23 +95,20 @@ class UserHandler(MethodView):
     @authorization
     def get(self):
         """
-        * @api {get} /user/ 获取用户列表
+        * @api {get} /user 获取用户列表
         * @apiPermission Role.Superuser
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Json} query 可自定义查询参数 \
-        {
-            "query": {"username": "sfhfpc"},
-            "limit": 2,
-            "skip": 3
-        } \
-        OR \
-        {
-            "query": {},
-            "limit": 2,
-            "skip": 3
-        }
-        * @apiParam {Int} [limit] Limit
-        * @apiParam {Int} [skip] Skip
+        * @apiParam {String} [username] 用户名
+        * @apiParam {String} [email] 邮箱
+        * @apiParam {String} [nick] 昵称
+        * @apiParam {Int} [role] 角色
+        * @apiParam {Int} [status] 状态
+        * @apiParam {Int} [limit=0] Limit
+        * @apiParam {Int} [skip=0] Skip
+        * @apiParam {String="create", "status", "role"} [order=create] 排序字段
+        * @apiParam {Int=1, -1} [sort=1] 排序方式
+        * @apiParamExample Param-Example
+            /user?role=100&order=status&sort=-1
         * @apiSuccessExample {json} Success-Response:
             # status code: 200
             {
@@ -122,7 +126,7 @@ class UserHandler(MethodView):
                   "create": "2019-12-13 08:15:16",
                   "email": "asycins@aliyun.com",
                   "id": "5df2d814f007418369463308",
-                  "role": 10,
+                  "role": 100,
                   "status": 0,
                   "username": "asyncins"
                 }
@@ -130,20 +134,39 @@ class UserHandler(MethodView):
               "message": "success"
             }
         """
-        query = request.json.get('query')
-        limit = request.json.get('limit') or 0
-        skip = request.json.get('skip') or 0
-        # 允许用户自定义查询条件
-        finds = databases.user.find(query).limit(limit).skip(skip)
-        info = [{
-            "id": str(i.get('_id')),
-            "username": i.get("username"),
-            "email": i.get("email"),
-            "role": i.get("role"),
-            "status": i.get("status"),
-            "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
-            for i in finds]
-        return {"message": "success", "data": info, "code": 200}, 200
+        username = request.args.get('username')
+        email = request.args.get('email')
+        role = request.args.get('role')
+        status = request.args.get('status')
+
+        order = request.args.get('order') or "create"
+        sor = request.args.get('sort') or 1
+        limit = request.args.get('limit') or 0
+        skip = request.args.get('skip') or 0
+        query = {}
+        if username:
+            query["username"] = username
+        if email:
+            query["email"] = email
+        if role:
+            query["role"] = role
+        if status:
+            query["status"] = status
+        # 从数据库中取出符合条件的数据
+        result = databases.user.find(query).limit(int(limit)).skip(int(skip)).sort(order, int(sor))
+        # 构造返回信息
+        users = []
+        for i in result:
+            info = {
+                "id": str(i.get('_id')),
+                "username": i.get("username"),
+                "email": i.get("email"),
+                "role": i.get("role"),
+                "status": i.get("status"),
+                "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")
+            }
+            users.append(info)
+        return {"message": "success", "data": users, "code": 200}, 200
 
     @authorization
     def put(self):
@@ -153,8 +176,14 @@ class UserHandler(MethodView):
         * @apiDescription 仅允许修改状态和角色
         * @apiHeader (Header) {String} Authorization Authorization value.
         * @apiParam {Int} idn  账户 ID
-        * @apiParam {String} [status]  账户状态
-        * @apiParam {Int} [role]  用户角色:0,1,10,100
+        * @apiParam {String=0, 1} status  账户状态值
+        * @apiParam {Int=0, 1, 10, 100} role  用户角色值
+        * @apiParamExample Param-Example
+            {
+                "id": "5df2f9ea2e0bc74fa4eda8ee",
+                "status": "1",
+                "role": "10"
+            }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
@@ -201,7 +230,11 @@ class UserHandler(MethodView):
         * @api {delete} /user/ 删除指定用户
         * @apiPermission Role.Superuser
         * @apiHeader (Header) {String} Authorization Authorization value.
-        * @apiParam {Int} idn  账户 ID
+        * @apiParam {Int} id  账户 ID
+        * @apiParamExample Param-Example
+            {
+                "id": "5df2f9ea2e0bc74fa4eda8ee",
+            }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
@@ -236,6 +269,11 @@ class LoginHandler(MethodView):
         * @apiPermission Role.Anonymous
         * @apiParam {String} username 用户名
         * @apiParam {String} password 密码
+        * @apiParamExample {json} Param-Example:
+            {
+                "username": "sfhfpc",
+                "password": "123456"
+            }
         * @apiErrorExample {json} Error-Response:
             # status code: 400
             {
