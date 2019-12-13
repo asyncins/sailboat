@@ -37,7 +37,7 @@ def performer(*args, **kwargs):
     将执行信息、执行结果结果，包括启动时间和结束时间和运行时长存入数据库
     """
     job = str(uuid4())
-    project, version, mode, rule, jid, inserted, idn, username = args
+    project, version, mode, rule, jid, idn, username = args
     # 开启子进程调用执行器
     instructions = ['-m', RIDEPATH, project, version]
     start = datetime.now()
@@ -65,7 +65,7 @@ def performer(*args, **kwargs):
     # 构造执行记录并存储到数据库
     message = {"project": project, "version": version,
                "mode": mode, "rule": rule,
-               "job": job, "inserted": inserted,
+               "job": job,
                "start": start, "end": end,
                "duration": duration, "jid": jid,
                "idn": idn, "username": username,
