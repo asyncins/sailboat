@@ -61,7 +61,8 @@ class LogHandler(MethodView):
         idn, username, role = get_user_info(token)
         count = 1
         if role != Role.SuperUser.value:
-            count = databases.record.count_documents({"idn": idn, "username": username})
+            query = {"idn": idn, "username": username, "project": project, "job": job}
+            count = databases.record.count_documents(query)
         if not count:
             return {"message": StatusCode.IsNotYours.value[0],
                     "data": {},
