@@ -103,8 +103,8 @@ class RecordsHandler(MethodView):
             username = auth_username
             idn = auth_idn
         else:
-            username = request.args.get('username')
-            idn = request.args.get('idn')
+            username = request.args.get('username') or auth_idn
+            idn = request.args.get('idn') or auth_idn
         project = request.args.get('project')
         version = request.args.get('version')
         mode = request.args.get('mode')
