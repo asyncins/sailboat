@@ -103,8 +103,8 @@ class RecordsHandler(MethodView):
             username = auth_username
             idn = auth_idn
         else:
-            username = request.args.get('username') or auth_idn
-            idn = request.args.get('idn') or auth_idn
+            username = request.args.get('username')
+            idn = request.args.get('idn')
         project = request.args.get('project')
         version = request.args.get('version')
         mode = request.args.get('mode')
@@ -139,8 +139,8 @@ class RecordsHandler(MethodView):
                 "duration": i.get("duration"),
                 "end": i.get("end"),
                 "inserted": i.get("inserted"),
-                "idn": idn,
-                "username": username,
+                "idn": i.get("idn"),
+                "username": i.get("username"),
                 "create": i.get("create").strftime("%Y-%m-%d %H:%M:%S")}
             information.append(info)
         return {"message": "success",
