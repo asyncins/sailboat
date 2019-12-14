@@ -4,6 +4,7 @@ import logging
 import subprocess
 from datetime import datetime
 from uuid import uuid4
+import logging
 
 from settings import LOGPATH, RIDEPATH
 from connect import databases
@@ -37,7 +38,9 @@ def performer(*args, **kwargs):
     将执行信息、执行结果结果，包括启动时间和结束时间和运行时长存入数据库
     """
     job = str(uuid4())
+
     project, version, mode, rule, jid, idn, username = args
+    logging.warning("args:\n", args)
     # 开启子进程调用执行器
     instructions = ['-m', RIDEPATH, project, version]
     start = datetime.now()
